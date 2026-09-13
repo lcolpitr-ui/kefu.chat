@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+.<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -363,9 +363,9 @@
     <div class="config-panel" id="configPanel" style="display: none;">
         <h4>API 配置</h4>
         <label>API 地址</label>
-        <input type="text" id="apiUrl" placeholder="http://localhost/v1" value="http://localhost/v1">
+        <input type="text" id="apiUrl" placeholder="https://api.dify.ai/v1" value="https://api.dify.ai/v1">
         <label>API Key</label>
-        <input type="password" id="apiKey" placeholder="app-xxxxxxxxxx">
+        <input type="password" id="apiKey" placeholder="app-xxxxxxxxxx" value="app-rhuJD4LnsVwuTqHLnpnpuyAj">
         <label style="margin-top: 12px;">
             <input type="checkbox" id="saveConfig" onchange="saveConfig()"> 保存配置到本地
         </label>
@@ -411,6 +411,12 @@
     </div>
 
     <script>
+        // 硬编码默认配置（第三方用户打开即可直接使用）
+        const DEFAULT_CONFIG = {
+            apiUrl: 'https://api.dify.ai/v1',
+            apiKey: 'app-rhuJD4LnsVwuTqHLnpnpuyAj'
+        };
+
         // 配置管理
         function toggleConfig() {
             const panel = document.getElementById('configPanel');
@@ -429,14 +435,25 @@
             }
         }
 
-        // 加载保存的配置
+        // 加载配置：优先使用保存的配置，没有则使用硬编码默认配置
         window.onload = function() {
             const saved = localStorage.getItem('chatbot_config');
             if (saved) {
-                const config = JSON.parse(saved);
-                document.getElementById('apiUrl').value = config.apiUrl || '';
-                document.getElementById('apiKey').value = config.apiKey || '';
-                document.getElementById('saveConfig').checked = true;
+                try {
+                    const config = JSON.parse(saved);
+                    document.getElementById('apiUrl').value = config.apiUrl || DEFAULT_CONFIG.apiUrl;
+                    document.getElementById('apiKey').value = config.apiKey || DEFAULT_CONFIG.apiKey;
+                    document.getElementById('saveConfig').checked = true;
+                } catch(e) {
+                    // 解析失败，使用默认配置
+                    document.getElementById('apiUrl').value = DEFAULT_CONFIG.apiUrl;
+                    document.getElementById('apiKey').value = DEFAULT_CONFIG.apiKey;
+                }
+            } else {
+                // 没有保存的配置，使用硬编码默认配置
+                document.getElementById('apiUrl').value = DEFAULT_CONFIG.apiUrl;
+                document.getElementById('apiKey').value = DEFAULT_CONFIG.apiKey;
+            }
             }
         };
 
