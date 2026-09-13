@@ -469,8 +469,7 @@
             bubble.className = 'message-bubble';
 
             if (isTyping) {
-                bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-                bubble.id = 'typingIndicator';
+                bubble.innerHTML = '<div class="typing-indicator" id="typingIndicator"><span></span><span></span><span></span></div>';
             } else {
                 bubble.innerHTML = formatMessage(content);
             }
