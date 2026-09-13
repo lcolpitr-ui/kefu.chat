@@ -528,6 +528,10 @@
         const chatInput = document.getElementById('chatInput');
         const sendBtn = document.getElementById('sendBtn');
 
+        // 请求控制：用于取消正在进行的请求
+        let currentController = null;
+        let isLoading = false;
+
         function handleKeyDown(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
@@ -586,7 +590,7 @@
 
         async function sendMessage() {
             const message = chatInput.value.trim();
-            if (!message) return;
+            if (!message || isLoading) return;
 
             // 检查API配置
             const apiUrl = document.getElementById('apiUrl').value.trim();
@@ -597,17 +601,25 @@
                 return;
             }
 
+            // 设置加载状态
+            isLoading = true;
+
             // 显示用户消息
             addMessage(message, true);
             chatInput.value = '';
-            sendBtn.disabled = true;
+
+            // 把发送按钮变成停止按钮
+            sendBtn.innerHTML = '⏹';
+            sendBtn.title = '停止生成';
+            sendBtn.disabled = false;
+            sendBtn.onclick = stopMessage;
 
             // 显示打字指示器
             addMessage('', false, true);
 
-            // 设置30秒超时
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            // 设置60秒超时（给Dify工作流更多执行时间）
+            currentController = new AbortController();
+            const timeoutId = setTimeout(() => currentController.abort(), 60000);
 
             try {
                 // 调用Dify工作流API
@@ -624,7 +636,7 @@
                         response_mode: 'blocking',
                         user: 'chatbot-user-' + Date.now()
                     }),
-                    signal: controller.signal
+                    signal: currentController.signal
                 });
 
                 clearTimeout(timeoutId);
@@ -658,14 +670,41 @@
                 clearTimeout(timeoutId);
                 removeTypingIndicator();
                 if (error.name === 'AbortError') {
-                    addMessage('⏱️ 请求超时（30秒），请稍后重试或检查网络连接', false);
+                    // 判断是超时还是用户主动取消
+                    if (isLoading) {
+                        addMessage('⏱️ 请求超时（60秒），请稍后重试或检查网络连接', false);
+                    }
+                    // 如果是用户主动取消，不显示额外提示（stopMessage里已经显示了）
                 } else {
                     addMessage(`❌ 网络错误：${error.message}<br><br>请检查：<br>1. API 地址是否正确<br>2. API Key 是否有效<br>3. Dify 服务是否运行`, false);
                 }
             }
 
-            sendBtn.disabled = false;
+            // 恢复发送按钮状态
+            resetSendButton();
+            currentController = null;
+            isLoading = false;
             chatInput.focus();
+        }
+
+        // 停止正在生成的回复
+        function stopMessage() {
+            if (currentController) {
+                currentController.abort();
+                currentController = null;
+            }
+            isLoading = false;
+            removeTypingIndicator();
+            addMessage('⏹️ 已停止生成', false);
+            resetSendButton();
+        }
+
+        // 恢复发送按钮为默认状态
+        function resetSendButton() {
+            sendBtn.innerHTML = '➤';
+            sendBtn.title = '发送';
+            sendBtn.disabled = false;
+            sendBtn.onclick = sendMessage;
         }
     </script>
 </body>
